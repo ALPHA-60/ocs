@@ -8,14 +8,12 @@ OCAMLDEP = ocamldep
 
 OCAMLFLAGS =
 
-.SUFFIXES: .o .c .h .cc .cpp .y .l .a .ml .mli .cmx .cmi .cmo
-
-.mli.cmi:
+%.cmi: %.mli
 	$(OCAMLC) $(OCAMLFLAGS) -c $<
 
-.ml.cmx:
+%.cmx: %.ml
 	$(OCAMLOPT) $(OCAMLFLAGS) -c $<
 
-.ml.cmo:
+%.cmo: %.ml
 	$(OCAMLC) $(OCAMLFLAGS) -c $<
 

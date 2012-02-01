@@ -9,19 +9,17 @@ N_LIB = ocs.cmxa
 C_LIB = ocs.a
 INTERP = ocscm
 
-BC_OBJS = ocs_error.cmo ocs_port.cmo ocs_vartable.cmo ocs_sym.cmo \
-	ocs_env.cmo ocs_char.cmo ocs_complex.cmo ocs_numaux.cmo \
-	ocs_num.cmo ocs_numstr.cmo ocs_lex.cmo ocs_misc.cmo ocs_read.cmo \
-	ocs_eval.cmo ocs_compile.cmo ocs_contin.cmo ocs_print.cmo \
-	ocs_io.cmo ocs_list.cmo ocs_macro.cmo ocs_prim.cmo ocs_string.cmo \
-	ocs_vector.cmo ocs_wrap.cmo ocs_top.cmo
 
-N_OBJS = ocs_error.cmx ocs_sym.cmx ocs_vartable.cmx ocs_env.cmx \
-	ocs_char.cmx ocs_misc.cmx ocs_compile.cmx ocs_eval.cmx \
-	ocs_contin.cmx ocs_port.cmx ocs_complex.cmx ocs_numaux.cmx \
-	ocs_num.cmx ocs_numstr.cmx ocs_print.cmx ocs_lex.cmx ocs_read.cmx \
-	ocs_io.cmx ocs_list.cmx ocs_macro.cmx ocs_prim.cmx ocs_string.cmx \
-	ocs_vector.cmx ocs_wrap.cmx ocs_top.cmx
+OCS_SOURCES = ocs_error.ml ocs_port.ml ocs_vartable.ml ocs_sym.ml \
+	ocs_env.ml ocs_char.ml ocs_complex.ml ocs_numaux.ml \
+	ocs_num.ml ocs_numstr.ml ocs_lex.ml ocs_misc.ml ocs_read.ml \
+	ocs_eval.ml ocs_compile.ml ocs_contin.ml ocs_print.ml \
+	ocs_io.ml ocs_list.ml ocs_macro.ml ocs_prim.ml ocs_string.ml \
+	ocs_vector.ml ocs_wrap.ml ocs_top.ml
+
+BC_OBJS = $(OCS_SOURCES:.ml=.cmo)
+
+N_OBJS = $(OCS_SOURCES:.ml=.cmx)
 
 INTERP_OBJS = ocs_main.cmx
 
@@ -35,23 +33,24 @@ native: $(N_LIB)
 bytecode: $(BC_LIB)
 
 $(N_LIB): $(N_OBJS)
-	$(OCAMLOPT) -a -o $(N_LIB) $(N_OBJS)
+	$(OCAMLOPT) -a -o $@ $^
 
 $(BC_LIB): $(BC_OBJS)
-	$(OCAMLC) -a -o $(BC_LIB) $(BC_OBJS)
+	$(OCAMLC) -a -o $@ $^
 
 $(INTERP): $(N_LIB) $(INTERP_OBJS)
-	$(OCAMLOPT) -o $(INTERP) nums.cmxa unix.cmxa $(N_LIB) $(INTERP_OBJS)
+	$(OCAMLOPT) -o $@ nums.cmxa unix.cmxa $^
 
 $(BCI): $(BC_LIB) $(BCI_OBJS)
-	$(OCAMLC) $(OCAMLFLAGS) -o $(BCI) nums.cma unix.cma $(BC_LIB) $(BCI_OBJS)
+	$(OCAMLC) $(OCAMLFLAGS) -o $@ nums.cma unix.cma $^
 
 clean:
 	-rm -f $(N_LIB) $(BC_LIB) $(C_LIB) $(INTERP) *.cm* *.o
 	-rm -f $(BCI)
+	-rm .depend
 
-depend:
-	$(OCAMLDEP) *.ml *.mli > .depend
+.depend: $(OCS_SOURCES) $(wildcard *.mli)
+	$(OCAMLDEP) $^ > $@
 
-include .depend
+-include .depend
 

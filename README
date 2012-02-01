@@ -17,7 +17,7 @@ Anything else that does not work as specified in R5RS is a bug.
 
 Requirements:
 
- - GNU make or pmake (BSD make)
+ - GNU make
  - OCaml 3.x (versions 3.06 and newer tested)
 
 Type make or gmake in the src directory.  This should produce the
