@@ -17,10 +17,14 @@ val string_output_port : unit -> port
 
 val is_input : port -> bool
 val is_output : port -> bool
+val is_string_port : port -> bool
+val is_closed : port -> bool
 
 val getc : port -> char option
 val ungetc : port -> char -> unit
 val char_ready : port -> bool
+  
+val get_string : port -> string
 
 val putc : port -> char -> unit
 val puts : port -> string -> unit

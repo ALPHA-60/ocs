@@ -22,6 +22,8 @@ let make_env () =
     Ocs_string.init e;
     Ocs_contin.init e;
     Ocs_io.init e;
+
+    Srfi_6.init e;
     e
 ;;
 

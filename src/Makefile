@@ -12,18 +12,19 @@ INTERP = ocscm
 empty:=
 space:= $(empty) $(empty)
 
-MODULES = 
+MODULES = srfi
 
 VPATH = $(subst  $(space),:,$(strip $(MODULES)))
 
-OCAMLFLAGS += $(patsubst %,-I %, $(MODULES))
+INCLUDE_FLAGS = $(patsubst %,-I %, $(MODULES))
+OCAMLFLAGS += $(INCLUDE_FLAGS)
 
 OCS_SOURCES = ocs_error.ml ocs_port.ml ocs_vartable.ml ocs_sym.ml \
 	ocs_env.ml ocs_char.ml ocs_complex.ml ocs_numaux.ml \
 	ocs_num.ml ocs_numstr.ml ocs_lex.ml ocs_misc.ml ocs_read.ml \
 	ocs_eval.ml ocs_compile.ml ocs_contin.ml ocs_print.ml \
 	ocs_io.ml ocs_list.ml ocs_macro.ml ocs_prim.ml ocs_string.ml \
-	ocs_vector.ml ocs_wrap.ml ocs_top.ml
+	ocs_vector.ml ocs_wrap.ml srfi_6.ml ocs_top.ml
 
 BC_OBJS = $(OCS_SOURCES:.ml=.cmo)
 
@@ -61,7 +62,7 @@ clean:
 
 
 .depend: $(OCS_SOURCES) $(wildcard *.mli) $(INTERP_SRC)
-	$(OCAMLDEP) $^ > $@
+	$(OCAMLDEP) $(INCLUDE_FLAGS) $^ > $@
 
 -include .depend
 

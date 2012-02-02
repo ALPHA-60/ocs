@@ -1,0 +1,10 @@
+;;; TODO: implement error handling and write real unit tests
+(define o (open-output-string))
+(write "123" o)
+(display (get-output-string o))
+(newline)
+(close-output-port o)
+(define  i (open-input-string "(+ 2 3)"))
+(display (read i))
+(newline)
+(close-input-port i)

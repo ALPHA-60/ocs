@@ -11,13 +11,17 @@ open Ocs_error
    the port can simply be used as a reference to the file
    descriptor.  *)
 
+type port_type = 
+  Port_fd of Unix.file_descr option
+| Port_string
+      
 type port = {
   mutable p_buf : string;
   mutable p_pos : int;
   mutable p_wend : int;
   mutable p_rend : int;
   mutable p_ugc : char option;
-  mutable p_fd : Unix.file_descr option;
+  mutable p_port : port_type;
   mutable p_input : bool;
   mutable p_output : bool;
   p_close : bool
@@ -32,13 +36,13 @@ let mkbuf () =
   String.create 1024
 ;;
 
-let mkport buf fd inf outf cl =
+let mkport buf port inf outf cl =
   { p_buf = buf;
     p_pos = 0;
     p_wend = 0;
     p_rend = 0;
     p_ugc = None;
-    p_fd = fd;
+    p_port = port;
     p_input = inf;
     p_output = outf;
     p_close = cl }
@@ -52,11 +56,19 @@ let is_output p =
   p.p_output
 ;;
 
+let is_closed p =
+  not p.p_input && not p.p_output
+;;
+
+let is_string_port p =
+  p.p_port == Port_string
+;;
+
 let wrflush p =
   if not p.p_output then
     raise (Error "not a valid output port");
-  match p.p_fd with
-    Some fd ->
+  match p.p_port with
+    Port_fd (Some fd) ->
       if p.p_wend > 0 && p.p_pos > 0 then
 	begin
 	  try
@@ -69,13 +81,14 @@ let wrflush p =
 	end;
       p.p_pos <- 0;
       p.p_wend <- String.length p.p_buf
-  | None ->
+  | Port_string ->
       if p.p_pos = p.p_wend then
 	let n = String.length p.p_buf in
 	let nbuf = String.create (n * 2) in
 	  String.blit p.p_buf 0 nbuf 0 n;
 	  p.p_buf <- nbuf;
 	  p.p_wend <- String.length p.p_buf
+  | _ -> ()
 ;;
 
 let rdfill p =
@@ -86,8 +99,8 @@ let rdfill p =
   p.p_pos <- 0;
   p.p_rend <- 0;
   p.p_wend <- 0;
-  match p.p_fd with
-    Some fd ->
+  match p.p_port with
+    Port_fd (Some fd) ->
       begin
 	try
 	  p.p_rend <- Unix.read fd p.p_buf 0 (String.length p.p_buf)
@@ -95,7 +108,7 @@ let rdfill p =
 	  Unix.Unix_error (e, _, _) ->
 	    raise (Error ("read error: " ^ Unix.error_message e))
       end
-  | None -> ()
+  | _ -> ()
 ;;
 
 let getc p =
@@ -114,7 +127,9 @@ let getc p =
 ;;
 
 let get_fd p =
-  p.p_fd
+  match p.p_port with
+    Port_fd fd -> fd
+  | _ -> raise (Error "Port has no file descriptor")
 ;;
 
 let flush p =
@@ -128,12 +143,12 @@ let close p =
       flush p;
       p.p_input <- false;
       p.p_output <- false;
-      match p.p_fd with
-	Some fd ->
+      match p.p_port with
+	Port_fd (Some fd) ->
 	  if p.p_close then Unix.close fd;
-	  p.p_fd <- None
-      | None -> ()
-    end
+	  p.p_port <- Port_fd None
+      | _ -> ();
+    end;
 ;;
 
 let ungetc p c =
@@ -144,11 +159,15 @@ let char_ready p =
   if p.p_ugc <> None || p.p_pos < p.p_rend then true
   else if not p.p_input then false
   else
-    match p.p_fd with
-      Some fd ->
+    match p.p_port with
+      Port_fd (Some fd) ->
 	let (r, _, _) = Unix.select [ fd ] [] [] 0.0 in
 	  List.length r > 0
-    | None -> false
+    | _ -> false
+;;
+
+let get_string p =
+  String.sub p.p_buf 0 p.p_pos
 ;;
 
 let putc p c =
@@ -178,10 +197,11 @@ let fd_port fd flags =
 		Pf_input -> inf := true
 	      | Pf_output -> outf := true
 	      | Pf_close -> clf := true) flags;
-    let p = mkport (mkbuf ()) (Some fd) !inf !outf !clf in
+    let p = mkport (mkbuf ()) (Port_fd (Some fd)) !inf !outf !clf in
       if !clf then Gc.finalise close p;
       p
 ;;
+
 
 let input_port ch =
   fd_port (Unix.descr_of_in_channel ch) [ Pf_input ]
@@ -213,11 +233,11 @@ let open_output_port name =
 ;;
 
 let string_input_port s =
-  let p = mkport s None true false false in
+  let p = mkport s Port_string true false true in
     p.p_rend <- String.length s;
     p
 ;;
 
 let string_output_port () =
-  mkport (mkbuf ()) None false true false
+  mkport (mkbuf ()) Port_string false true true
 ;;
