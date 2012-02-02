@@ -9,6 +9,14 @@ N_LIB = ocs.cmxa
 C_LIB = ocs.a
 INTERP = ocscm
 
+empty:=
+space:= $(empty) $(empty)
+
+MODULES = 
+
+VPATH = $(subst  $(space),:,$(strip $(MODULES)))
+
+OCAMLFLAGS += $(patsubst %,-I %, $(MODULES))
 
 OCS_SOURCES = ocs_error.ml ocs_port.ml ocs_vartable.ml ocs_sym.ml \
 	ocs_env.ml ocs_char.ml ocs_complex.ml ocs_numaux.ml \
@@ -21,7 +29,8 @@ BC_OBJS = $(OCS_SOURCES:.ml=.cmo)
 
 N_OBJS = $(OCS_SOURCES:.ml=.cmx)
 
-INTERP_OBJS = ocs_main.cmx
+INTERP_SRC = ocs_main.ml
+INTERP_OBJS = $(INTERP_SRC:.ml=.cmx)
 
 BCI_OBJS = ocs_main.cmo
 BCI = ocscm-bc
@@ -45,11 +54,13 @@ $(BCI): $(BC_LIB) $(BCI_OBJS)
 	$(OCAMLC) $(OCAMLFLAGS) -o $@ nums.cma unix.cma $^
 
 clean:
+	-rm -f $(foreach dir,$(strip $(MODULES)),$(wildcard $(dir)/*.cm* $(dir)/*.o))
 	-rm -f $(N_LIB) $(BC_LIB) $(C_LIB) $(INTERP) *.cm* *.o
 	-rm -f $(BCI)
 	-rm .depend
 
-.depend: $(OCS_SOURCES) $(wildcard *.mli)
+
+.depend: $(OCS_SOURCES) $(wildcard *.mli) $(INTERP_SRC)
 	$(OCAMLDEP) $^ > $@
 
 -include .depend
